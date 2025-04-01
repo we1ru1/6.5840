@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"fmt"
 
 	"6.5840/kvsrv1/rpc"
 	"6.5840/labrpc"
@@ -68,7 +69,9 @@ func (ts *Test) onePartition(p []int, req any) any {
 	// try all the servers, maybe one is the leader but give up after NSEC
 	t0 := time.Now()
 	for time.Since(t0).Seconds() < NSEC {
+		ts.mu.Lock()
 		index := ts.leader
+		ts.mu.Unlock()
 		for range ts.srvs {
 			if ts.g.IsConnected(index) {
 				s := ts.srvs[index]
@@ -113,6 +116,8 @@ func (ts *Test) checkCounter(v int, nsrv int) {
 	for iters := 0; iters < 30; iters++ {
 		n = ts.countValue(v)
 		if n >= nsrv {
+			text := fmt.Sprintf("all %v servers have counter value %v", nsrv, v)
+			tester.AnnotateCheckerSuccess(text, text)
 			return
 		}
 		time.Sleep(to)
@@ -120,7 +125,9 @@ func (ts *Test) checkCounter(v int, nsrv int) {
 			to *= 2
 		}
 	}
-	ts.Fatalf("checkCounter: only %d srvs have %v instead of %d", n, v, nsrv)
+	err := fmt.Sprintf("checkCounter: only %d srvs have %v instead of %d", n, v, nsrv)
+	tester.AnnotateCheckerFailure(err, err)
+	ts.Fatalf(err)
 }
 
 func (ts *Test) countValue(v int) int {

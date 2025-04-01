@@ -10,3 +10,8 @@ mrtmp.*
 /main/mrcoordinator
 /main/mrsequential
 /main/mrworker
+
+src/Makefile
+src/crawler/
+*.log
+src/main/logs/

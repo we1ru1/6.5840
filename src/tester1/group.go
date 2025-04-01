@@ -74,6 +74,7 @@ type ServerGrp struct {
 	gid         Tgid
 	connected   []bool // whether each server is on the net
 	mks         FstartServer
+	mu          sync.Mutex
 }
 
 func makeSrvGrp(net *labrpc.Network, gid Tgid, n int, mks FstartServer) *ServerGrp {
@@ -174,7 +175,9 @@ func (sg *ServerGrp) connect(i int, to []int) {
 func (sg *ServerGrp) disconnect(i int, from []int) {
 	// log.Printf("%p: disconnect peer %d from %v\n", sg, i, from)
 
+	sg.mu.Lock()
 	sg.connected[i] = false
+	sg.mu.Unlock()
 
 	// outgoing socket files
 	sg.srvs[i].disconnect(from)
@@ -195,6 +198,8 @@ func (sg *ServerGrp) DisconnectAll(i int) {
 }
 
 func (sg *ServerGrp) IsConnected(i int) bool {
+	defer sg.mu.Unlock()
+	sg.mu.Lock()
 	return sg.connected[i]
 }
 
@@ -308,7 +313,7 @@ func (sg *ServerGrp) AllowServersExcept(l int) []int {
 }
 
 func (sg *ServerGrp) Partition(p1 []int, p2 []int) {
-	// log.Printf("partition servers into: %v %v\n", p1, p2)
+	//log.Printf("partition servers into: %v %v\n", p1, p2)
 	for i := 0; i < len(p1); i++ {
 		sg.disconnect(p1[i], p2)
 		sg.connect(p1[i], p1)

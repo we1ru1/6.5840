@@ -22,8 +22,8 @@ const (
 // kvsrv1 lab.
 func TestInitQuery5A(t *testing.T) {
 
-	// MakeTest starts a key/value server using `kvsrv.StartKVServer`,
-	// which is defined in shardkv1/kvsrv1.
+	// MakeTest starts your lab2 key/value server using
+	// `kvsrv.StartKVServer`.
 	ts := MakeTest(t, "Test (5A): Init and Query ...", true)
 	defer ts.Cleanup()
 
@@ -67,7 +67,7 @@ func TestStaticOneShardGroup5A(t *testing.T) {
 	}
 
 	// disconnect raft leader of shardgrp and check that keys are
-	// still avaialable
+	// still available
 	ts.disconnectClntFromLeader(ck.(*kvtest.TestClerk).Clnt, shardcfg.Gid1)
 
 	for i := 0; i < n; i++ {
@@ -90,29 +90,26 @@ func TestJoinBasic5A(t *testing.T) {
 	cfg, _ := sck.Query()
 
 	gid2 := ts.newGid()
-	err := ts.joinGroups(sck, []tester.Tgid{gid2})
-	if err != rpc.OK {
-		ts.t.Fatalf("joinGroups: err %v", err)
+	if ok := ts.joinGroups(sck, []tester.Tgid{gid2}); !ok {
+		ts.t.Fatalf("TestJoinBasic5A: joinGroups failed")
 	}
 
 	cfg1, _ := sck.Query()
 	if cfg.Num+1 != cfg1.Num {
-		ts.t.Fatalf("wrong num %d expected %d ", cfg1.Num, cfg.Num+1)
+		ts.t.Fatalf("TestJoinBasic5A: wrong num %d expected %d ", cfg1.Num, cfg.Num+1)
 	}
 
 	if !cfg1.IsMember(gid2) {
-		ts.t.Fatalf("%d isn't a member of %v", gid2, cfg1)
+		ts.t.Fatalf("TestJoinBasic5A: %d isn't a member of %v", gid2, cfg1)
 	}
 
-	// check shards at shardcfg.Gid2
-	ts.checkShutdownSharding(gid1, gid2, ka, va)
+	ts.checkShutdownSharding(gid1, ka, va)
 
 	for i := 0; i < len(ka); i++ {
 		ts.CheckGet(ck, ka[i], va[i], rpc.Tversion(1))
 	}
 
-	// check shards at shardcfg.Gid1
-	ts.checkShutdownSharding(gid2, gid1, ka, va)
+	ts.checkShutdownSharding(gid2, ka, va)
 
 	for i := 0; i < len(ka); i++ {
 		ts.CheckGet(ck, ka[i], va[i], rpc.Tversion(1))
@@ -138,9 +135,8 @@ func TestDeleteBasic5A(t *testing.T) {
 
 	sck := ts.ShardCtrler()
 	gid2 := ts.newGid()
-	err := ts.joinGroups(sck, []tester.Tgid{gid2})
-	if err != rpc.OK {
-		ts.t.Fatalf("joinGroups: err %v", err)
+	if ok := ts.joinGroups(sck, []tester.Tgid{gid2}); !ok {
+		ts.t.Fatalf("TestDeleteBasic5A: joinGroups failed")
 	}
 
 	// push more Get's through so that all peers snapshot
@@ -152,7 +148,7 @@ func TestDeleteBasic5A(t *testing.T) {
 	sz1 := ts.Group(gid1).SnapshotSize()
 	sz2 := ts.Group(gid2).SnapshotSize()
 	if sz1+sz2 > sz+10000 {
-		ts.t.Fatalf("gid1 %d + gid2 %d = %d use too much space %d", sz1, sz2, sz1+sz2, sz)
+		ts.t.Fatalf("TestDeleteBasic5A: gid1 %d + gid2 %d = %d use too much space %d", sz1, sz2, sz1+sz2, sz)
 	}
 }
 
@@ -167,25 +163,19 @@ func TestJoinLeaveBasic5A(t *testing.T) {
 
 	sck := ts.ShardCtrler()
 	gid2 := ts.newGid()
-	err := ts.joinGroups(sck, []tester.Tgid{gid2})
-	if err != rpc.OK {
-		ts.t.Fatalf("joinGroups: err %v", err)
+	if ok := ts.joinGroups(sck, []tester.Tgid{gid2}); !ok {
+		ts.t.Fatalf("TestJoinLeaveBasic5A: joinGroups failed")
 	}
 
-	// check shards at shardcfg.Gid2
-	ts.checkShutdownSharding(gid1, gid2, ka, va)
+	ts.checkShutdownSharding(gid1, ka, va)
 
 	for i := 0; i < len(ka); i++ {
 		ts.CheckGet(ck, ka[i], va[i], rpc.Tversion(1))
 	}
 
-	err = ts.leave(sck, shardcfg.Gid1)
-	if err != rpc.OK {
-		ts.t.Fatalf("Leave: err %v", err)
-	}
-	cfg, _ := sck.Query()
-	if cfg.IsMember(shardcfg.Gid1) {
-		ts.t.Fatalf("%d is a member of %v", shardcfg.Gid1, cfg)
+	ts.leave(sck, shardcfg.Gid1)
+	if ok := ts.checkMember(sck, shardcfg.Gid1); ok {
+		ts.t.Fatalf("%d is a member after leave", shardcfg.Gid1)
 	}
 
 	ts.Group(shardcfg.Gid1).Shutdown()
@@ -204,8 +194,7 @@ func TestJoinLeaveBasic5A(t *testing.T) {
 		ts.CheckGet(ck, ka[i], va[i], rpc.Tversion(1))
 	}
 
-	// check shards at shardcfg.Gid2
-	ts.checkShutdownSharding(gid2, gid1, ka, va)
+	ts.checkShutdownSharding(gid2, ka, va)
 }
 
 // test many groups joining and leaving, reliable or unreliable
@@ -222,7 +211,7 @@ func joinLeave5A(t *testing.T, reliable bool, part string) {
 
 	ts.joinGroups(sck, grps)
 
-	ts.checkShutdownSharding(grps[0], grps[1], ka, va)
+	ts.checkShutdownSharding(grps[0], ka, va)
 
 	for i := 0; i < len(ka); i++ {
 		ts.CheckGet(ck, ka[i], va[i], rpc.Tversion(1))
@@ -260,7 +249,7 @@ func TestShutdown5A(t *testing.T) {
 	grps := ts.groups(NJOIN)
 	ts.joinGroups(sck, grps)
 
-	ts.checkShutdownSharding(grps[0], grps[1], ka, va)
+	ts.checkShutdownSharding(grps[0], ka, va)
 
 	for i := 0; i < len(ka); i++ {
 		ts.CheckGet(ck, ka[i], va[i], rpc.Tversion(1))
@@ -386,11 +375,11 @@ func TestProgressJoin(t *testing.T) {
 				return
 			default:
 				//log.Printf("join/leave %v", newgid)
-				if err := ts.joinGroups(sck, []tester.Tgid{newgid}); err != rpc.OK {
-					t.Fatalf("joined err %v", err)
+				if ok := ts.joinGroups(sck, []tester.Tgid{newgid}); !ok {
+					t.Fatalf("TestProgressJoin: join failed")
 				}
-				if err := ts.leaveGroups(sck, []tester.Tgid{newgid}); err != rpc.OK {
-					t.Fatalf("leave err %v", err)
+				if ok := ts.leaveGroups(sck, []tester.Tgid{newgid}); !ok {
+					t.Fatalf("TestProgressJoin: leave failed")
 				}
 			}
 		}
@@ -455,12 +444,12 @@ func concurrentClerk(t *testing.T, nclnt int, reliable bool, part string) {
 
 	sck := ts.ShardCtrler()
 	grps := ts.groups(NGRP)
-	if err := ts.joinGroups(sck, grps); err != rpc.OK {
-		t.Fatalf("joinGroups err %v", err)
+	if ok := ts.joinGroups(sck, grps); !ok {
+		t.Fatalf("concurrentClerk: joinGroups failed")
 	}
 
-	if err := ts.leaveGroups(sck, grps); err != rpc.OK {
-		t.Fatalf("leaveGroups err %v", err)
+	if ok := ts.leaveGroups(sck, grps); !ok {
+		t.Fatalf("concurrentClerk: leaveGroups failed")
 	}
 
 	<-ch
@@ -508,10 +497,9 @@ func TestJoinLeave5B(t *testing.T) {
 	ts.Group(gid1).Shutdown()
 
 	gid2 := ts.newGid()
-	ch := make(chan rpc.Err)
+	ch := make(chan bool)
 	go func() {
-		err := ts.joinGroups(sck, []tester.Tgid{gid2})
-		ch <- err
+		ch <- ts.joinGroups(sck, []tester.Tgid{gid2})
 	}()
 
 	select {
@@ -525,9 +513,9 @@ func TestJoinLeave5B(t *testing.T) {
 	ts.Group(gid1).StartServers()
 
 	select {
-	case err := <-ch:
-		if err != rpc.OK {
-			ts.Fatalf("Join returns err %v", err)
+	case ok := <-ch:
+		if !ok {
+			ts.Fatalf("TestJoinLeave5B: Join returned %t", ok)
 		}
 	case <-time.After(time.Second * NSEC):
 		ts.Fatalf("Join didn't complete")
@@ -540,15 +528,13 @@ func TestJoinLeave5B(t *testing.T) {
 
 	ts.Group(gid2).Shutdown()
 
-	ch = make(chan rpc.Err)
 	go func() {
-		err := ts.leave(sck, shardcfg.Gid1)
-		ch <- err
+		ch <- ts.leaveGroups(sck, []tester.Tgid{shardcfg.Gid1})
 	}()
 
 	select {
-	case err := <-ch:
-		ts.Fatalf("Leave finished %v", err)
+	case <-ch:
+		ts.Fatalf("Leave finished")
 	case <-time.After(NSEC * time.Second):
 		// Give give some time to try to join
 	}
@@ -557,9 +543,9 @@ func TestJoinLeave5B(t *testing.T) {
 	ts.Group(gid2).StartServers()
 
 	select {
-	case err := <-ch:
-		if err != rpc.OK {
-			ts.Fatalf("Leave returns err %v", err)
+	case ok := <-ch:
+		if !ok {
+			ts.Fatalf("TestJoinLeave5B: Leave failed %t", ok)
 		}
 	case <-time.After(time.Second * NSEC):
 		ts.Fatalf("Leave didn't complete")
@@ -569,13 +555,13 @@ func TestJoinLeave5B(t *testing.T) {
 	}
 }
 
-// test recovery of partitioned controlers
+// test recovery of partitioned controllers
 func TestRecoverCtrler5B(t *testing.T) {
 	const (
 		NPARTITION = 5
 	)
 
-	ts := MakeTest(t, "Test (5B): recover controler ...", true)
+	ts := MakeTest(t, "Test (5B): recover controller ...", true)
 	defer ts.Cleanup()
 
 	gid := ts.setupKVService()
@@ -615,9 +601,7 @@ func TestLeaseBasicRelease5C(t *testing.T) {
 
 	sck0, clnt0 := ts.makeShardCtrlerClnt()
 	go func() {
-		if err := sck0.InitController(); err != rpc.OK {
-			t.Fatalf("failed to init controller %v", err)
-		}
+		sck0.InitController()
 		time.Sleep(200 * time.Millisecond)
 		sck0.ExitController()
 	}()
@@ -628,9 +612,7 @@ func TestLeaseBasicRelease5C(t *testing.T) {
 	sck1, clnt1 := ts.makeShardCtrlerClnt()
 	ch := make(chan struct{})
 	go func() {
-		if err := sck1.InitController(); err != rpc.OK {
-			t.Fatalf("failed to init controller %v", err)
-		}
+		sck1.InitController()
 		time.Sleep(200 * time.Millisecond)
 		sck1.ExitController()
 		ch <- struct{}{}
@@ -654,9 +636,7 @@ func TestLeaseBasicExpire5C(t *testing.T) {
 
 	sck0, clnt0 := ts.makeShardCtrlerClnt()
 	go func() {
-		if err := sck0.InitController(); err != rpc.OK {
-			t.Fatalf("failed to init controller %v", err)
-		}
+		sck0.InitController()
 		for {
 			time.Sleep(10 * time.Millisecond)
 		}
@@ -671,9 +651,7 @@ func TestLeaseBasicExpire5C(t *testing.T) {
 	sck1, clnt1 := ts.makeShardCtrlerClnt()
 	ch := make(chan struct{})
 	go func() {
-		if err := sck1.InitController(); err != rpc.OK {
-			t.Fatalf("failed to init controller %v", err)
-		}
+		sck1.InitController()
 		time.Sleep(100 * time.Millisecond)
 		sck1.ExitController()
 		ch <- struct{}{}
@@ -699,9 +677,7 @@ func TestLeaseBasicRefresh5C(t *testing.T) {
 
 	sck0, clnt0 := ts.makeShardCtrlerClnt()
 	go func() {
-		if err := sck0.InitController(); err != rpc.OK {
-			t.Fatalf("failed to init controller %v", err)
-		}
+		sck0.InitController()
 		time.Sleep(LEADERSEC * param.LEASETIMESEC * time.Second)
 		sck0.ExitController()
 	}()
@@ -713,9 +689,7 @@ func TestLeaseBasicRefresh5C(t *testing.T) {
 	sck1, clnt1 := ts.makeShardCtrlerClnt()
 	ch := make(chan struct{})
 	go func() {
-		if err := sck1.InitController(); err != rpc.OK {
-			t.Fatalf("failed to init controller %v", err)
-		}
+		sck1.InitController()
 		time.Sleep(100 * time.Millisecond)
 		sck1.ExitController()
 		ch <- struct{}{}
@@ -733,7 +707,7 @@ func TestLeaseBasicRefresh5C(t *testing.T) {
 
 // Test if old leader is fenced off when reconnecting while it is in
 // the middle of a Join.
-func TestPartitionControlerJoin5C(t *testing.T) {
+func TestPartitionControllerJoin5C(t *testing.T) {
 	const (
 		NSLEEP = 2
 		RAND   = 1000
@@ -746,9 +720,7 @@ func TestPartitionControlerJoin5C(t *testing.T) {
 	ka, va := ts.SpreadPuts(ck, NKEYS)
 
 	sck, clnt := ts.makeShardCtrlerClnt()
-	if err := sck.InitController(); err != rpc.OK {
-		ts.Fatalf("failed to init controller %v", err)
-	}
+	sck.InitController()
 
 	ch := make(chan rpc.Err)
 	ngid := tester.Tgid(0)
@@ -756,11 +728,12 @@ func TestPartitionControlerJoin5C(t *testing.T) {
 		ngid = ts.newGid()
 		ts.Config.MakeGroupStart(ngid, NSRV, ts.StartServerShardGrp)
 		ts.Group(ngid).Shutdown()
-		ch <- ts.join(sck, ngid, ts.Group(ngid).SrvNames())
+		ts.join(sck, ngid, ts.Group(ngid).SrvNames())
+		ch <- rpc.OK
 	}()
 
-	// sleep for a while to get the chance for the controler to get stuck
-	// in join or leave, because gid is down
+	// sleep for a while to get the chance for the controller to get
+	// stuck in join, because gid is down
 	time.Sleep(1 * time.Second)
 
 	// partition sck
@@ -771,25 +744,22 @@ func TestPartitionControlerJoin5C(t *testing.T) {
 
 	ts.Group(ngid).StartServers()
 
-	// start new controler to supersede partitioned one,
-	// it will also be stuck
+	// start new controller to supersede partitioned one,
 	sck0 := ts.makeShardCtrler()
-	if err := sck0.InitController(); err != rpc.OK {
-		t.Fatalf("failed to init controller %v", err)
+	sck0.InitController()
+
+	scfg, _ := sck0.Query()
+	if !scfg.IsMember(ngid) {
+		t.Fatalf("Didn't recover gid %d", ngid)
 	}
 
 	sck0.ExitController()
 
-	//log.Printf("reconnect")
-
-	// reconnect old controller, which shouldn't be able
-	// to do anything
+	// reconnect old controller, which shouldn't finish ChangeConfigTo
 	clnt.ConnectAll()
 
-	err := <-ch
-	if err == rpc.OK {
-		t.Fatalf("Old leader succeeded %v", err)
-	}
+	// wait for old controller to finish/exit
+	<-ch
 
 	time.Sleep(1 * time.Second)
 
@@ -800,19 +770,64 @@ func TestPartitionControlerJoin5C(t *testing.T) {
 
 // Make a leader controller loses its leadership during join/leave and
 // test if the next controller recovers correctly.
-func TestPartitionRecovery5C(t *testing.T) {
-	const (
-		// NPARTITION = 10
-		NPARTITION = 5
-	)
-
-	ts := MakeTestLeases(t, "Test (5C): controllers with leased leadership ...", true)
+func partitionRecovery5C(t *testing.T, reliable bool, npart, nclnt int) {
+	const NSEC = 60
+	ts := MakeTestLeases(t, "Test (5C): controllers with leased leadership ...", reliable)
 	defer ts.Cleanup()
 	gid := ts.setupKVService()
 	ck := ts.MakeClerk()
-	ka, va := ts.SpreadPuts(ck, NKEYS)
 
-	for i := 0; i < NPARTITION; i++ {
+	ka := make([]string, 0)
+	va := make([]string, 0)
+	if nclnt <= 0 {
+		ka, va = ts.SpreadPuts(ck, NKEYS)
+	}
+
+	ch := make(chan []kvtest.ClntRes)
+	if nclnt > 0 {
+		ka := kvtest.MakeKeys(1)
+		go func(ch chan []kvtest.ClntRes) {
+			rs := ts.SpawnClientsAndWait(nclnt, NSEC*time.Second, func(me int, ck kvtest.IKVClerk, done chan struct{}) kvtest.ClntRes {
+				return ts.OneClientPut(me, ck, ka, done)
+			})
+			ch <- rs
+		}(ch)
+	}
+
+	for i := 0; i < npart; i++ {
 		ts.killCtrler(ck, gid, ka, va)
 	}
+
+	if nclnt > 0 {
+		<-ch
+		ts.CheckPorcupine()
+	}
+}
+
+func TestPartitionRecoveryReliableNoClerk5C(t *testing.T) {
+	const (
+		NPARTITION = 5
+	)
+	partitionRecovery5C(t, true, NPARTITION, 0)
+}
+
+func TestPartitionRecoveryUnreliableNoClerk5C(t *testing.T) {
+	const (
+		NPARTITION = 3
+	)
+	partitionRecovery5C(t, false, NPARTITION, 0)
+}
+
+func TestPartitionRecoveryReliableClerks5C(t *testing.T) {
+	const (
+		NPARTITION = 5
+	)
+	partitionRecovery5C(t, true, NPARTITION, 5)
+}
+
+func TestPartitionRecoveryUnreliableClerks5C(t *testing.T) {
+	const (
+		NPARTITION = 5
+	)
+	partitionRecovery5C(t, false, NPARTITION, 5)
 }

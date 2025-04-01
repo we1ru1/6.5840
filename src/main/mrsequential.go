@@ -3,16 +3,19 @@ package main
 //
 // simple sequential MapReduce.
 //
-// go run mrsequential.go wc.so pg*.txt
+// go run mrsequential.go ../mrapps/wc.so pg*.txt
 //
 
-import "fmt"
-import "6.5840/mr"
-import "plugin"
-import "os"
-import "log"
-import "io/ioutil"
-import "sort"
+import (
+	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"plugin"
+	"sort"
+
+	"6.5840/mr"
+)
 
 // for sorting by key.
 type ByKey []mr.KeyValue
@@ -36,7 +39,7 @@ func main() {
 	// accumulate the intermediate Map output.
 	//
 	intermediate := []mr.KeyValue{}
-	for _, filename := range os.Args[2:] {
+	for _, filename := range os.Args[2:] { // 一个文件只有一个kva，这里是想将多个kva都合并到intermediate中
 		file, err := os.Open(filename)
 		if err != nil {
 			log.Fatalf("cannot open %v", filename)
@@ -50,6 +53,8 @@ func main() {
 		intermediate = append(intermediate, kva...)
 	}
 
+	fmt.Println("mrsequential intermediate的长度是: ", len(intermediate))
+
 	//
 	// a big difference from real MapReduce is that all the
 	// intermediate data is in one place, intermediate[],
@@ -57,6 +62,10 @@ func main() {
 	//
 
 	sort.Sort(ByKey(intermediate))
+
+	// for i, kva := range intermediate {
+	// 	fmt.Printf("i=%d, kva:%v\n", i, kva)
+	// }
 
 	oname := "mr-out-0"
 	ofile, _ := os.Create(oname)

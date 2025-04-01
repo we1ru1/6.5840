@@ -5,16 +5,19 @@ package main
 // in ../mr/worker.go. typically there will be
 // multiple worker processes, talking to one coordinator.
 //
-// go run mrworker.go wc.so
+// go run mrworker.go ../mrapps/wc.so
 //
 // Please do not change this file.
 //
 
-import "6.5840/mr"
-import "plugin"
-import "os"
-import "fmt"
-import "log"
+import (
+	"fmt"
+	"log"
+	"os"
+	"plugin"
+
+	"6.5840/mr"
+)
 
 func main() {
 	if len(os.Args) != 2 {

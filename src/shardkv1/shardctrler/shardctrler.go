@@ -8,9 +8,9 @@ import (
 
 	"sync/atomic"
 
+	"6.5840/kvsrv1"
 	"6.5840/kvsrv1/rpc"
 	"6.5840/kvtest1"
-	"6.5840/shardkv1/kvsrv1"
 	"6.5840/shardkv1/shardcfg"
 	"6.5840/tester1"
 )
@@ -37,12 +37,10 @@ func MakeShardCtrler(clnt *tester.Clnt, leases bool) *ShardCtrler {
 }
 
 // The tester calls InitController() before starting a new
-// controller. In this method you can implement recovery (part B) and
-// use a lock to become leader (part C).  InitController may fail when
-// another controller supersedes (e.g., when this controller is
-// partitioned during recovery).
-func (sck *ShardCtrler) InitController() rpc.Err {
-	return rpc.ErrNoKey
+// controller. In part A, this method doesn't need to do anything. In
+// B and C, this method implements recovery (part B) and uses a lock
+// to become leader (part C).
+func (sck *ShardCtrler) InitController() {
 }
 
 // The tester calls ExitController to exit a controller. In part B and
@@ -59,11 +57,11 @@ func (sck *ShardCtrler) InitConfig(cfg *shardcfg.ShardConfig) {
 }
 
 // Called by the tester to ask the controller to change the
-// configuration from the current one to new. It may return an error
-// if this controller is disconnected for a while and another
-// controller takes over in the mean time, as in part C.
-func (sck *ShardCtrler) ChangeConfigTo(new *shardcfg.ShardConfig) rpc.Err {
-	return rpc.OK
+// configuration from the current one to new.  While the controller
+// changes the configuration it may be superseded by another
+// controller.
+func (sck *ShardCtrler) ChangeConfigTo(new *shardcfg.ShardConfig) {
+	return
 }
 
 // Tester "kills" shardctrler by calling Kill().  For your
@@ -79,7 +77,7 @@ func (sck *ShardCtrler) isKilled() bool {
 }
 
 
-// Return the current configuration
+// Return the current configuration and its version number
 func (sck *ShardCtrler) Query() (*shardcfg.ShardConfig, rpc.Tversion) {
 	// Your code here.
 	return nil, 0
