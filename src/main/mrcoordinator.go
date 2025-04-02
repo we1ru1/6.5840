@@ -9,14 +9,10 @@ package main
 // Please do not change this file.
 //
 
-import (
-	"fmt"
-	"log"
-	"os"
-	"time"
-
-	"6.5840/mr"
-)
+import "6.5840/mr"
+import "time"
+import "os"
+import "fmt"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -24,11 +20,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	m := mr.MakeCoordinator(os.Args[1:], 10) // MakeCoordinator()的参数： files []string, nReduce int
+	m := mr.MakeCoordinator(os.Args[1:], 10)
 	for m.Done() == false {
 		time.Sleep(time.Second)
 	}
 
-	log.Println("mrcoordinator.go已退出...")
 	time.Sleep(time.Second)
 }

@@ -15,15 +15,12 @@ package main
 //   -d directory
 //   -r restart
 
-import (
-	"fmt"
-	"os"
-	"runtime"
-	"strconv"
-	"time"
-
-	"6.5840/diskv"
-)
+import "time"
+import "6.5840/diskv"
+import "os"
+import "fmt"
+import "strconv"
+import "runtime"
 
 func usage() {
 	fmt.Printf("Usage: diskvd -g gid -m master... -s server... -i my-index -d dir\n")
