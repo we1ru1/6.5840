@@ -89,7 +89,7 @@ func (kv *KVServer) Put(args *rpc.PutArgs, reply *rpc.PutReply) {
 		if args.Version == 0 { // 是插入新key的情况，找不到很正常
 			kv.kv_store[args.Key] = &Value_and_Version{args.Value, 1}
 			reply.Err = rpc.OK
-		} else { // 不是插入新key，纯粹是找不到
+		} else { // 不是插入新key，纯粹是找不到，返回ErrNoKey
 			reply.Err = rpc.ErrNoKey
 		}
 	} else { // 检索到该key了，那么看version
@@ -104,8 +104,9 @@ func (kv *KVServer) Put(args *rpc.PutArgs, reply *rpc.PutReply) {
 	}
 
 	// 当前store中内容
-	// log.Println("---------------------")
+	// log.Println()
 	// log.Println("kv_store cotent currently:")
+	// log.Println("---------------------")
 	// for key, entry := range kv.kv_store {
 	// 	log.Printf("%s: %+v\n", key, entry)
 	// }

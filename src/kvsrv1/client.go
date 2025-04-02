@@ -2,6 +2,7 @@ package kvsrv
 
 import (
 	"log"
+	"time"
 
 	"6.5840/kvsrv1/rpc"
 	kvtest "6.5840/kvtest1"
@@ -39,13 +40,17 @@ func (ck *Clerk) Get(key string) (string, rpc.Tversion, rpc.Err) {
 		ok := ck.clnt.Call(ck.server, "KVServer.Get", &args, &reply)
 		if !ok {
 			log.Println("RPC: KVServer.Get调用失败，正在重试...")
+
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 		// 调用成功
 		if reply.Err == rpc.OK {
+			log.Printf("Get: key: %v	return: %v\n", key, rpc.OK)
 			return reply.Value, reply.Version, rpc.OK
 		}
-		return "", 0, reply.Err
+		log.Printf("Get: key: %v	return: %v\n", key, reply.Err)
+		return "", 0, reply.Err // 返回rpc.ErrNoKey
 
 	}
 
@@ -83,13 +88,17 @@ func (ck *Clerk) Put(key, value string, version rpc.Tversion) rpc.Err {
 		if !ok {
 			log.Println("RPC: KVServer.Put调用失败，正在重试...")
 			i++
+
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 
-		if reply.Err == rpc.ErrVersion && i != 0 {
+		if reply.Err == rpc.ErrVersion && i != 0 { // 重发请求，得到ErrMaybe的情况
+			log.Printf("Put: key: %v	return: %v\n", key, rpc.ErrMaybe)
 			return rpc.ErrMaybe
 		}
-		return reply.Err
+		log.Printf("Put: key: %v	return: %v\n", key, reply.Err)
+		return reply.Err // reply.Err只可能是rpc.OK或者rpc.ErrVersion
 	}
 
 }
