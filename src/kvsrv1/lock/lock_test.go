@@ -2,14 +2,14 @@ package lock
 
 import (
 	"fmt"
-	//	"log"
+	"log"
 	"strconv"
 	"testing"
 	"time"
 
-	"6.5840/kvsrv1"
+	kvsrv "6.5840/kvsrv1"
 	"6.5840/kvsrv1/rpc"
-	"6.5840/kvtest1"
+	kvtest "6.5840/kvtest1"
 )
 
 const (
@@ -21,6 +21,7 @@ const (
 func oneClient(t *testing.T, me int, ck kvtest.IKVClerk, done chan struct{}) kvtest.ClntRes {
 	lk := MakeLock(ck, "l")
 	ck.Put("l0", "", 0)
+
 	for i := 1; true; i++ {
 		select {
 		case <-done:
@@ -28,10 +29,13 @@ func oneClient(t *testing.T, me int, ck kvtest.IKVClerk, done chan struct{}) kvt
 		default:
 			lk.Acquire()
 
-			// log.Printf("%d: acquired lock", me)
+			log.Printf("%d: acquired lock", me)
 
 			b := strconv.Itoa(me)
 			val, ver, err := ck.Get("l0")
+
+			// log.Printf("Get(10)操作：val:%v, ver:%v, err:%v", val, ver, err)
+
 			if err == rpc.OK {
 				if val != "" {
 					t.Fatalf("%d: two clients acquired lock %v", me, val)
@@ -41,6 +45,9 @@ func oneClient(t *testing.T, me int, ck kvtest.IKVClerk, done chan struct{}) kvt
 			}
 
 			err = ck.Put("l0", string(b), ver)
+
+			// log.Printf("Put操作：key:10, value:%v, version:%v", string(b), ver)
+
 			if !(err == rpc.OK || err == rpc.ErrMaybe) {
 				t.Fatalf("%d: put failed %v", me, err)
 			}
@@ -48,11 +55,14 @@ func oneClient(t *testing.T, me int, ck kvtest.IKVClerk, done chan struct{}) kvt
 			time.Sleep(10 * time.Millisecond)
 
 			err = ck.Put("l0", "", ver+1)
+
+			// log.Printf("Put操作：key:10, value:, version:%v", ver+1)
+
 			if !(err == rpc.OK || err == rpc.ErrMaybe) {
 				t.Fatalf("%d: put failed %v", me, err)
 			}
 
-			// log.Printf("%d: release lock", me)
+			log.Printf("%d: release lock", me)
 
 			lk.Release()
 		}
