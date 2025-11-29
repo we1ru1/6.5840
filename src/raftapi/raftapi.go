@@ -19,18 +19,19 @@ type Raft interface {
 	Kill()
 }
 
-// As each Raft peer becomes aware that successive log entries are
-// committed, the peer should send an ApplyMsg to the server (or
-// tester), via the applyCh passed to Make(). Set CommandValid to true
-// to indicate that the ApplyMsg contains a newly committed log entry.
+// 当每个 Raft 节点意识到连续的日志条目已被提交时，
+// 该节点应该通过传递给 Make() 的 applyCh 向服务器（或测试程序）
+// 发送一个 ApplyMsg。将 CommandValid 设置为 true，
+// 以表明 ApplyMsg 包含一个新的已提交日志条目。
 //
-// In Lab 3 you'll want to send other kinds of messages (e.g.,
-// snapshots) on the applyCh; at that point you can add fields to
-// ApplyMsg, but set CommandValid to false for these other uses.
+// 在实验 3 中，你可能需要在 applyCh 上发送其他类型的消息（例如// 快照）；
+// 在那个时候，你可以向 ApplyMsg 添加字段，
+// 但对于这些其他用途，请将 CommandValid 设置为 false。
 type ApplyMsg struct {
 	CommandValid bool
 	Command      interface{}
 	CommandIndex int
+	CommandTerm  int
 
 	SnapshotValid bool
 	Snapshot      []byte

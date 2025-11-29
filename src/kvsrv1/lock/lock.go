@@ -135,8 +135,6 @@ func (lk *Lock) Release() {
 			log.Printf("[客户端-%s] 释放锁失败...\n", lk.lockOwner)
 			continue
 
-			// } else if {
-
 		} else { // 锁不属于我们，返回
 			log.Printf("[客户端-%s] 尝试释放非自己持有的锁，视为已释放...", lk.lockOwner)
 			lk.acquired = false

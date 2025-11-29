@@ -10,6 +10,8 @@ package raft
 
 import (
 	"fmt"
+	"log"
+
 	// "log"
 	"math/rand"
 	"sync"
@@ -17,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"6.5840/tester1"
+	tester "6.5840/tester1"
 )
 
 // The tester generously allows solutions to complete elections in one second
@@ -47,7 +49,7 @@ func TestInitialElection3A(t *testing.T) {
 	time.Sleep(2 * RaftElectionTimeout)
 	term2 := ts.checkTerms()
 	if term1 != term2 {
-		fmt.Printf("warning: term changed even though there were no failures")
+		fmt.Printf("warning: term changed even though there were no failures\n")
 	}
 
 	// there should still be a leader.
@@ -106,14 +108,19 @@ func TestManyElections3A(t *testing.T) {
 	tester.AnnotateTest("TestManyElection3A", servers)
 	ts.Begin("Test (3A): multiple elections")
 
+	log.Println("开始时检测leader状况...")
 	ts.checkOneLeader()
 
 	iters := 10
 	for ii := 1; ii < iters; ii++ {
+
 		// disconnect three nodes
 		i1 := rand.Int() % servers
 		i2 := rand.Int() % servers
 		i3 := rand.Int() % servers
+
+		log.Printf("第 %d 次迭代：断开三台server：%d,%d,%d...\n", ii, i1, i2, i3)
+
 		ts.g.DisconnectAll(i1)
 		ts.g.DisconnectAll(i2)
 		ts.g.DisconnectAll(i3)
@@ -121,6 +128,7 @@ func TestManyElections3A(t *testing.T) {
 
 		// either the current leader should still be alive,
 		// or the remaining four should elect a new one.
+		log.Println("断开3台server后，检测leader状况...")
 		ts.checkOneLeader()
 
 		ts.g.ConnectOne(i1)
@@ -128,6 +136,7 @@ func TestManyElections3A(t *testing.T) {
 		ts.g.ConnectOne(i3)
 		tester.AnnotateConnection(ts.g.GetConnected())
 	}
+	log.Println("最后检测leader状况...")
 	ts.checkOneLeader()
 }
 
@@ -1286,6 +1295,7 @@ func snapcommon(t *testing.T, name string, disconnect bool, reliable bool, crash
 			leader1 = ts.checkOneLeader()
 		}
 		if crash {
+			// ts.restartWithApplier(victim, ts.applierSnap)
 			ts.restart(victim)
 			tester.AnnotateRestart([]int{victim})
 			ts.one(rand.Int(), servers, true)

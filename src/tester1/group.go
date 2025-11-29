@@ -2,6 +2,7 @@ package tester
 
 import (
 	//"log"
+	"log"
 	"strconv"
 	"sync"
 
@@ -138,6 +139,8 @@ func (sg *ServerGrp) ConnectAll() {
 }
 
 func (sg *ServerGrp) ConnectOne(i int) {
+	log.Printf("服务器 %d 恢复与其他所有服务器的连接...\n", i)
+
 	sg.connect(i, sg.all())
 }
 
@@ -194,6 +197,7 @@ func (sg *ServerGrp) disconnect(i int, from []int) {
 }
 
 func (sg *ServerGrp) DisconnectAll(i int) {
+	log.Printf("服务器 %d 断开与其他所有服务器的连接...\n", i)
 	sg.disconnect(i, sg.all())
 }
 
@@ -253,7 +257,7 @@ func (sg *ServerGrp) StartServers() {
 
 // Shutdown a server by isolating it
 func (sg *ServerGrp) ShutdownServer(i int) {
-	//log.Printf("ShutdownServer %v", ServerName(sg.gid, i))
+	log.Printf("服务器 [%v] 崩溃", i)
 	sg.disconnect(i, sg.all())
 
 	// disable client connections to the server.
@@ -297,19 +301,6 @@ func (sg *ServerGrp) MakePartition(l int) ([]int, []int) {
 	}
 	p2[len(p2)-1] = l
 	return p1, p2
-}
-
-func (sg *ServerGrp) AllowServersExcept(l int) []int {
-	n := len(sg.srvs) - 1
-	p := make([]int, n)
-	j := 0
-	for i, _ := range sg.srvs {
-		if i != l {
-			p[j] = i
-			j++
-		}
-	}
-	return p
 }
 
 func (sg *ServerGrp) Partition(p1 []int, p2 []int) {

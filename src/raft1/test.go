@@ -2,6 +2,8 @@ package raft
 
 import (
 	"fmt"
+	"log"
+
 	//log
 	"math/rand"
 	"sync"
@@ -11,7 +13,7 @@ import (
 
 	"6.5840/labrpc"
 	"6.5840/raftapi"
-	"6.5840/tester1"
+	tester "6.5840/tester1"
 )
 
 type Test struct {
@@ -57,6 +59,7 @@ func (ts *Test) mksrv(ends []*labrpc.ClientEnd, grp tester.Tgid, srv int, persis
 }
 
 func (ts *Test) restart(i int) {
+	log.Printf("服务器 [%v] 从崩溃中重启", i)
 	ts.g.StartServer(i) // which will call mksrv to make a new server
 	ts.Group(tester.GRP0).ConnectAll()
 }
@@ -97,6 +100,8 @@ func (ts *Test) checkOneLeader() int {
 	}
 	details := fmt.Sprintf("unable to find a leader")
 	tester.AnnotateCheckerFailure("no leader", details)
+
+	log.Println()
 	ts.Fatalf("expected one leader, got none")
 	return -1
 }
@@ -205,18 +210,18 @@ func (ts *Test) nCommitted(index int) (int, any) {
 	return count, cmd
 }
 
-// do a complete agreement.
-// it might choose the wrong leader initially,
-// and have to re-submit after giving up.
-// entirely gives up after about 10 seconds.
-// indirectly checks that the servers agree on the
-// same value, since nCommitted() checks this,
-// as do the threads that read from applyCh.
-// returns index.
-// if retry==true, may submit the command multiple
-// times, in case a leader fails just after Start().
-// if retry==false, calls Start() only once, in order
-// to simplify the early Lab 3B tests.
+// 执行一次完整的协议一致性操作。
+// 初始时可能会选择错误的领导者，
+// 并在放弃后重新提交。
+// 大约 10 秒后完全放弃。
+// 间接检查服务器是否对同一值达成一致，
+// 因为 nCommitted() 检查了这一点，
+// 从 applyCh 读取数据的线程也会进行检查。
+// 返回日志索引。
+// 如果 retry==true，可能会多次提交命令，
+// 以防领导者在 Start() 后立即失败。
+// 如果 retry==false，则只调用一次 Start()，
+// 以便简化早期的 Lab 3B 测试。
 func (ts *Test) one(cmd any, expectedServers int, retry bool) int {
 	var textretry string
 	if retry {

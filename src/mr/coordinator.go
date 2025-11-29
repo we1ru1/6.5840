@@ -269,7 +269,7 @@ func MakeCoordinator(files []string, nReduce int) *Coordinator {
 	log.Println("-----------------------------------")
 	for id, task := range c.reduceTasks {
 		log.Printf("  Task[%d]: {Id: %d, Type: %s, Status: %s, FileName: %s}",
-			id, task.Id, task.Type, task.Status)
+			id, task.Id, task.Type, task.Status, task.FileName)
 	}
 	log.Println("The server is ready...")
 	return &c
